@@ -19,9 +19,6 @@ except ImportError:
 class JSONLLoggingCallback(TrainerCallback):
     """
     Custom callback to write training metrics to JSONL format.
-
-    This provides consistency with SFT/OSFT backends which output training_metrics.jsonl.
-    Writes live metrics during training, not just at the end.
     """
 
     def __init__(self, output_dir: str):
@@ -34,16 +31,28 @@ class JSONLLoggingCallback(TrainerCallback):
         self.output_file = os.path.join(output_dir, 'training_metrics.jsonl')
         # Ensure directory exists
         os.makedirs(output_dir, exist_ok=True)
+        
+        # DEBUG: Log the file path that will be written to
+        print(f"[TrainingHub] DEBUG: Will write metrics to: {self.output_file}", flush=True)
 
     def on_log(self, args, state, control, logs=None, **kwargs):
         """
         Called when trainer logs metrics.
-
-        Writes entries in the same format as SFT/OSFT:
-        {"step": 1, "loss": 4.2727, "epoch": 0.015625, "learning_rate": 2e-6}
         """
         if logs is None:
             return
+
+        # Only write from global rank 0 to avoid duplicate entries in distributed training
+        if not state.is_world_process_zero:
+            return
+        
+        # DEBUG: Log first write to confirm which pod is writing
+        if not hasattr(self, '_first_write_logged'):
+            print(f"[TrainingHub] DEBUG: Writing metrics from this pod to {self.output_file}", flush=True)
+            print(f"[TrainingHub] DEBUG: JOB_COMPLETION_INDEX={os.environ.get('JOB_COMPLETION_INDEX')}, "
+                  f"PET_NODE_RANK={os.environ.get('PET_NODE_RANK')}, "
+                  f"is_world_process_zero={state.is_world_process_zero}", flush=True)
+            self._first_write_logged = True
 
         # Create entry with consistent format
         entry = {
@@ -53,7 +62,6 @@ class JSONLLoggingCallback(TrainerCallback):
 
         # Add metrics from logs (loss, learning_rate, etc.)
         for key, value in logs.items():
-            # Convert numpy/torch values to Python types for JSON serialization
             if hasattr(value, 'item'):
                 entry[key] = value.item()
             else:
@@ -62,6 +70,7 @@ class JSONLLoggingCallback(TrainerCallback):
         # Write to JSONL file
         with open(self.output_file, 'a') as f:
             f.write(json.dumps(entry) + '\n')
+            f.flush()
 
 
 class UnslothLoRABackend(Backend):
