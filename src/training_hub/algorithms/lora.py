@@ -40,6 +40,10 @@ class JSONLLoggingCallback(TrainerCallback):
         if logs is None:
             return
 
+        print(f"[CALLBACK DEBUG] is_world_process_zero={state.is_world_process_zero}, "
+          f"JOB_COMPLETION_INDEX={os.environ.get('JOB_COMPLETION_INDEX')}, "
+          f"PET_NODE_RANK={os.environ.get('PET_NODE_RANK')}", flush=True)
+
         # Check GLOBAL rank using environment variables (same as kubeflow-sdk cleanup)
         # Don't use state.is_world_process_zero - it's local to each pod!
         job_index = os.environ.get("JOB_COMPLETION_INDEX")
