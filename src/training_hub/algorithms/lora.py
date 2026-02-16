@@ -36,14 +36,20 @@ class JSONLLoggingCallback(TrainerCallback):
         print(f"[TrainingHub] DEBUG: Will write metrics to: {self.output_file}", flush=True)
 
     def on_log(self, args, state, control, logs=None, **kwargs):
-        """
-        Called when trainer logs metrics.
-        """
+        """Called when trainer logs metrics."""
         if logs is None:
             return
 
-        # Only write from global rank 0 to avoid duplicate entries in distributed training
-        if not state.is_world_process_zero:
+        # Check GLOBAL rank using environment variables (same as kubeflow-sdk cleanup)
+        # Don't use state.is_world_process_zero - it's local to each pod!
+        job_index = os.environ.get("JOB_COMPLETION_INDEX")
+        if job_index is not None:
+            is_primary = job_index == "0"
+        else:
+            pet_rank = os.environ.get("PET_NODE_RANK")
+            is_primary = pet_rank == "0" if pet_rank is not None else False
+        
+        if not is_primary:
             return
         
         # DEBUG: Log first write to confirm which pod is writing
@@ -53,21 +59,20 @@ class JSONLLoggingCallback(TrainerCallback):
                   f"PET_NODE_RANK={os.environ.get('PET_NODE_RANK')}, "
                   f"is_world_process_zero={state.is_world_process_zero}", flush=True)
             self._first_write_logged = True
-
         # Create entry with consistent format
         entry = {
             "step": state.global_step,
             "epoch": state.epoch,
         }
 
-        # Add metrics from logs (loss, learning_rate, etc.)
+        # Add metrics from logs
         for key, value in logs.items():
             if hasattr(value, 'item'):
                 entry[key] = value.item()
             else:
                 entry[key] = value
 
-        # Write to JSONL file
+        # Write to JSONL file with proper flushing
         with open(self.output_file, 'a') as f:
             f.write(json.dumps(entry) + '\n')
             f.flush()
