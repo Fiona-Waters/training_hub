@@ -434,6 +434,7 @@ class VeRLLoRAGRPOBackend(Backend):
             f"actor_rollout_ref.model.lora_alpha={lora_alpha}",
             "actor_rollout_ref.model.enable_gradient_checkpointing=True",
             "actor_rollout_ref.model.use_remove_padding=True",
+            'actor_rollout_ref.model.override_config={"attn_implementation":"sdpa"}',
             # Actor (training)
             f"actor_rollout_ref.actor.optim.lr={learning_rate}",
             f"actor_rollout_ref.actor.ppo_mini_batch_size={min(train_batch_size, 256)}",
