@@ -399,6 +399,7 @@ class VeRLLoRAGRPOBackend(Backend):
         temperature = algorithm_params.get("temperature", 0.7)
         gpu_memory_utilization = algorithm_params.get("gpu_memory_utilization", 0.35)
         n_gpus = algorithm_params.get("n_gpus", 1)
+        nnodes = algorithm_params.get("nnodes", 1)
         tp_size = algorithm_params.get("tensor_parallel_size", 1)
 
         # train_batch_size = number of prompts per batch. verl's rollout.n
@@ -458,7 +459,7 @@ class VeRLLoRAGRPOBackend(Backend):
             # Trainer
             "trainer.critic_warmup=0",
             f"trainer.n_gpus_per_node={n_gpus}",
-            "trainer.nnodes=1",
+            f"trainer.nnodes={nnodes}",
             f"trainer.total_epochs={num_iterations}",
             f"trainer.save_freq={save_freq}",
             "trainer.test_freq=-1",
