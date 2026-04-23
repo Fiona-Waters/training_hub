@@ -142,17 +142,23 @@ result = lora_grpo(
 
 ### Basic Installation
 
-This installs the base package, but doesn't install the CUDA-related dependencies which are required for GPU training.
+This installs the base package, but doesn't install SFT/OSFT/LoRA backends, GRPO runtime dependencies, or CUDA-related dependencies.
 
 ```bash
 pip install training-hub
+```
+
+### SFT / OSFT Support
+For SFT and OSFT training (requires `instructlab-training` and `rhai-innovation-mini-trainer`):
+```bash
+pip install training-hub[lab]
 ```
 
 ### Development Installation
 ```bash
 git clone https://github.com/Red-Hat-AI-Innovation-Team/training_hub
 cd training_hub
-pip install -e .
+pip install -e .[lab]
 ```
 
 **For developers:** See the [Development Guide](./DEVELOPING.md) for detailed instructions on setting up your development environment, running local documentation, and contributing to Training Hub.
