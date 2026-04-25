@@ -18,13 +18,13 @@
 
 ## Support Matrix
 
-| Algorithm | InstructLab-Training | RHAI Innovation Mini-Trainer | PEFT | Unsloth | VERL | Status |
+| Algorithm | InstructLab-Training | RHAI Innovation Mini-Trainer | PEFT | Unsloth | verl | Status |
 |-----------|----------------------|------------------------------|------|---------|------|--------|
 | **Supervised Fine-tuning (SFT)** | ✅ | - | - | - | - | Implemented |
 | Continual Learning (OSFT) | 🔄 | ✅ | 🔄 | - | - | Implemented |
 | **Low-Rank Adaptation (LoRA) + SFT** | - | - | - | ✅ | - | Implemented |
+| **LoRA + GRPO (Adapter-Based RLVR)** | - | - | - | ✅ | ✅ | Implemented |
 | Direct Preference Optimization (DPO) | - | - | - | - | 🔄 | Planned |
-| Group Relative Policy Optimization (GRPO) | - | - | - | - | 🔄 | Planned |
 
 **Legend:**
 - ✅ Implemented and tested
@@ -106,6 +106,38 @@ result = lora_sft(
 ```
 
 
+### [LoRA + GRPO (Adapter-Based RLVR)](./algorithms/lora_grpo)
+
+Train LoRA adapters on tool-calling agents using Group Relative Policy Optimization with reinforcement learning from verifiable rewards. Features:
+- Single-turn and multi-turn tool-call verification with automatic per-turn decomposition
+- Two backends: OpenPipe ART + Unsloth GRPO (single-GPU, fast iteration) and verl (multi-GPU, scales to 70B+)
+- Built-in reward functions for tool-call correctness, or bring your own
+- Zero API cost training using ground-truth trace decomposition
+
+```python
+from training_hub import lora_grpo
+
+# Single GPU (ART backend)
+result = lora_grpo(
+    model_path="Qwen/Qwen3-4B",
+    data_path="./tool_call_traces.jsonl",
+    ckpt_output_dir="./grpo_output",
+    backend="art",
+    lora_r=32,
+    lora_alpha=64,
+    num_iterations=15,
+)
+
+# Multi GPU (verl backend)
+result = lora_grpo(
+    model_path="Qwen/Qwen3-4B",
+    data_path="./tool_call_traces.jsonl",
+    ckpt_output_dir="./grpo_output",
+    backend="verl",
+    n_gpus=4,
+)
+```
+
 ## Installation
 
 ### Basic Installation
@@ -135,6 +167,22 @@ pip install -e .[lora]
 ```
 
 **Note:** The LoRA extras include Unsloth optimizations and PyTorch-optimized xformers for better performance and compatibility.
+
+### GRPO Support
+For LoRA + GRPO training (both ART and verl backends):
+```bash
+pip install training-hub[grpo,lora]
+```
+
+> **Note:** When combining `[grpo]` with `[cuda]` extras, install them sequentially
+> to avoid dependency solver conflicts:
+> ```bash
+> pip install training-hub[grpo,lora]
+> pip install training-hub[cuda]
+> ```
+> The `[grpo]` extras constrain torch, vllm, and transformers versions for verl
+> compatibility, which may conflict with versions pulled by `[cuda]`. Sequential
+> installation lets the solver pick compatible versions.
 
 ### CUDA Support
 For GPU training with CUDA support:

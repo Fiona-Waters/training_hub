@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 name = "training-hub"
 description = "An algorithm-focused interface for common language model training, continual learning, and reinforcement learning techniques"
 readme = "README.md"
-license = "Apache-2.0"
+license = {text = "Apache-2.0"}
 requires-python = ">=3.11"
 dependencies = [
     "setuptools>=80.0",
@@ -67,6 +67,13 @@ lora = [
     "unsloth>=2026.1.1",
     "trl>=0.18.0",
     "xformers>=0.0.33.post1",
+]
+
+grpo = [
+    "openpipe-art",
+    "verl>=0.7",  # no [vllm] extra — verl works with ART's vllm 0.15+ despite its conservative cap
+    "litellm>=1.82.0,<1.82.7",  # 1.82.7-1.82.8 compromised (TeamPCP supply chain attack, 2026-03-24)
+    "transformers>=4.51.3,<5.0",  # trl<=0.24 (capped by unsloth) breaks with transformers 5.x
 ]
 
 dev = [
